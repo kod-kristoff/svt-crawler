@@ -117,7 +117,7 @@ class SvtParser():
 
     def get_crawled_data(self):
         """Get list of crawled URLs from CRAWLED file."""
-        self.crawled_data = dict()
+        self.crawled_data = {}
         self.saved_urls = set()
         if CRAWLED.is_file():
             with open(CRAWLED) as f:
@@ -184,9 +184,7 @@ class SvtParser():
                         done = True
                         break
 
-                    # Save article
-                    succeeded = self.get_article(short_url, topic_name, force)
-                    if succeeded:
+                    if succeeded := self.get_article(short_url, topic_name, force):
                         self.remove_from_failed(short_url)
                     else:
                         self.add_to_failed(short_url)
@@ -227,11 +225,17 @@ class SvtParser():
                 year = int(article_json[0].get("modified")[:4])
 
             # If year is out of range, put article in nodate folder
-            this_year = int(datetime.today().strftime("%Y"))
+            this_year = int(datetime.now().strftime("%Y"))
             if (year < 2004) or (year > this_year):
                 year = "nodate"
 
-            filepath = DATADIR / Path("svt-" + str(year)) / topic_name / Path(article_id + ".json")
+            filepath = (
+                DATADIR
+                / Path(f"svt-{str(year)}")
+                / topic_name
+                / Path(f"{article_id}.json")
+            )
+
             write_json(article_json, filepath)
 
             self.crawled_data[short_url] = [article_id, str(year), topic_name]
@@ -350,8 +354,7 @@ class SvtParser():
                     request = requests.get(url)
                     pagecontent = request.json().get("auto", {}).get("content", {})
                     for c in pagecontent:
-                        short_url = c.get("url", "")
-                        if short_url:
+                        if short_url := c.get("url", ""):
                             if self.get_article(short_url, topic_name):
                                 success.add(url)
                             else:
@@ -363,12 +366,10 @@ class SvtParser():
                         print(f"  Error when parsing listing '{request.url}'\n  {tb}")
                     new_failed.add(url)
 
-            # Process article
+            elif self.get_article(url, topic_name):
+                success.add(url)
             else:
-                if self.get_article(url, topic_name):
-                    success.add(url)
-                else:
-                    new_failed.add(url)
+                new_failed.add(url)
 
         # Update fail file
         for i in success:
@@ -389,7 +390,7 @@ def process_articles(override_existing=False):
     """Convert json data to Sparv-friendly XML."""
     def write_contents(contents, contents_dir, filecounter):
         contents += "</articles>"
-        filepath = contents_dir / (str(filecounter) + ".xml")
+        filepath = contents_dir / f"{str(filecounter)}.xml"
         print(f"writing file {filepath}")
         write_data(contents, filepath)
 
@@ -443,7 +444,7 @@ def process_article(article_json):
         if elem.get("type") not in ["svt-image", "svt-video", "svt-scribblefeed"]:
             if parent.text is not None:
                 # If parent already contains text, don't override it
-                parent.text = parent.text + " " + elem.get("content", "")
+                parent.text = f"{parent.text} " + elem.get("content", "")
             elif elem.get("content", "").strip():
                 parent.text = elem.get("content", "")
         if "children" in elem:
@@ -457,8 +458,7 @@ def process_article(article_json):
         return parent
 
     def set_attribute(xml_elem, article_json, json_name, xml_name):
-        attr = str(article_json.get(json_name, "")).strip()
-        if attr:
+        if attr := str(article_json.get(json_name, "")).strip():
             xml_elem.set(xml_name, attr)
 
     article = etree.Element("text")
