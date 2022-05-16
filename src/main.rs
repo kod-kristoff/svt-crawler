@@ -1,7 +1,7 @@
 // #!/usr/bin/env python3
-// 
+//
 // """Crawler for SVT news."""
-// 
+//
 use clap::{Arg, Command};
 // import json
 // import math
@@ -17,16 +17,16 @@ use std::path::{Path, PathBuf};
 #[macro_use]
 extern crate lazy_static;
 use svt_crawler::Page;
-// 
+//
 // import requests
 // from lxml import etree
-// 
+//
 const DATADIR: &str = "data";
 // CRAWLED = DATADIR / Path("crawled_pages.json")
 // FAILED = DATADIR / Path("failed_urls.json")
 // PROCESSED_JSON = DATADIR / Path("processed_json.json")
-// 
-// 
+//
+//
 // -------------------------------------------------------------------------------
 //  Define the command line args
 // -------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ fn parse_args() -> Args {
                 .arg(
                     Arg::new("retry")
                         .short('r')
-                        .long("retry") 
+                        .long("retry")
                         .help("try to crawl pages that have failed previously")
                 )
                 .arg(
@@ -104,7 +104,7 @@ fn parse_args() -> Args {
         },
         _ => { unreachable!() }
     };
-    Args { command } 
+    Args { command }
 }
 
 #[derive(Debug)]
@@ -130,7 +130,7 @@ enum Cmd {
 // -------------------------------------------------------------------------------
 //  Parser for article listings
 // -------------------------------------------------------------------------------
-// 
+//
 /// Parser for 'nyheter' article listing pages.
 pub struct SvtParser {
     http_client: reqwest::blocking::Client,
@@ -180,7 +180,7 @@ lazy_static! {
             String::from("vader"),
             String::from("kultur"),
         ];
-        for area in LOCAL.iter() { 
+        for area in LOCAL.iter() {
             topics.push(format!("nyheter/lokalt/{}", area));
         }
         topics
@@ -188,7 +188,7 @@ lazy_static! {
 }
 
 
-impl SvtParser { 
+impl SvtParser {
     pub fn new(debug: bool) -> Self {
         let http_client = reqwest::blocking::Client::builder()
             .timeout(Duration::from_secs(6))
@@ -205,13 +205,13 @@ impl SvtParser {
 //             with open(CRAWLED) as f:
 //                 self.crawled_data = json.load(f)
 //                 self.saved_urls = set(self.crawled_data.keys())
-// 
+//
 //         # Keep track of articles that could not be downloaded
 //         self.failed_urls = []
 //         if FAILED.is_file():
 //             with open(FAILED) as f:
 //                 self.failed_urls = json.load(f)
-// 
+//
     /// Get all article URLs from a certain topic from the SVT API.
     pub fn crawl(&self, force: bool) {
         eprintln!("SvtParser.crawl(force={force}) called");
@@ -241,11 +241,11 @@ impl SvtParser {
             self.get_urls(topic_name, topic_url, pages, firstpage, force)
         }
     }
-    
+
     /// Get article URLs from every page.
     fn get_urls(&self, topic_name: String, topic_url: String, pages: u32, firstpage: Page, force: bool) {
         eprintln!("SvtParser.get_urls(topic_url={topic_url}) called");
-// 
+//
 //     def get_urls(self, topic_name, topic_url, pages, firstpage, request, force=False):
 //         prev_crawled = len(self.saved_urls)
         let mut done = false;
@@ -253,7 +253,7 @@ impl SvtParser {
             if done {
                 break;
             }
-// 
+//
 //             self.query_params["page"] = i
 //             encoded_params = ",".join(f"{k}={v}" for k, v in self.query_params.items())
 //             pagecontent = []
@@ -261,7 +261,7 @@ impl SvtParser {
             let pagecontent = if i == 1 {
                 firstpage.auto.content
             } else {
-                let response = self.http_client.get(topic_url)
+                let response = self.http_client.get(&topic_url)
                     .query(&[("q", "auto"), ("limit", LIMIT_STR), ("page", &*format!("{}", i))])
                     .send()
                     .expect("get_urls: send request");
@@ -277,7 +277,7 @@ impl SvtParser {
 //                 if self.debug:
 //                     print(f"  Error when parsing listing '{request.url}'\n  {tb}")
 //                 self.add_to_failed(request.url)
-// 
+//
 //             for c in pagecontent:
 //                 short_url = c.get("url", "")
 //                 if short_url.startswith("https://www.svt.se"):
@@ -290,21 +290,21 @@ impl SvtParser {
 //                             print(f"  Article already saved, skipping remaining. Date: {c.get('published', None)}")
 //                         done = True
 //                         break
-// 
+//
 //                     # Save article
 //                     succeeded = self.get_article(short_url, topic_name, force)
 //                     if succeeded:
 //                         self.remove_from_failed(short_url)
 //                     else:
 //                         self.add_to_failed(short_url)
-// 
+//
 //             write_json(self.failed_urls, FAILED)
 //             if len(self.saved_urls) > prev_crawled:
 //                 write_json(self.crawled_data, CRAWLED)
 //                 prev_crawled = len(self.saved_urls)
         }
     }
-// 
+//
 //     def get_article(self, short_url, topic_name, force=False):
 //         """Get the content from the article URL and save as json."""
 //         # Check if article has been downloaded already
@@ -312,57 +312,57 @@ impl SvtParser {
 //             short_url = short_url[18:]
 //         if short_url in self.saved_urls and not force:
 //             return True
-// 
+//
 //         article_url = self.ARTICLE_URL.format(short_url)
 //         if self.debug:
 //             print(f"  New article: {article_url}")
 //         try:
 //             article_json = requests.get(article_url).json().get("articles", {}).get("content", [])
-// 
+//
 //             if len(article_json) == 0:
 //                 if self.debug:
 //                     print(f"  No data found in article '{article_url}'")
 //                 return False
-// 
+//
 //             if len(article_json) > 1:
 //                 print(f"  Found article with multiple content entries: {short_url}")
-// 
+//
 //             article_id = str(article_json[0].get("id"))
-// 
+//
 //             year = 0
 //             if article_json[0].get("published"):
 //                 year = int(article_json[0].get("published")[:4])
 //             elif article_json[0].get("modified"):
 //                 year = int(article_json[0].get("modified")[:4])
-// 
+//
 //             # If year is out of range, put article in nodate folder
 //             this_year = int(datetime.today().strftime("%Y"))
 //             if (year < 2004) or (year > this_year):
 //                 year = "nodate"
-// 
+//
 //             filepath = DATADIR / Path("svt-" + str(year)) / topic_name / Path(article_id + ".json")
 //             write_json(article_json, filepath)
-// 
+//
 //             self.crawled_data[short_url] = [article_id, str(year), topic_name]
 //             self.saved_urls.add(short_url)
 //             return True
-// 
+//
 //         except Exception:
 //             tb = traceback.format_exc().replace("\n", "\n  ")
 //             if self.debug:
 //                 print(f"  Error when parsing article '{article_url}'\n  {tb}")
 //             return False
-// 
+//
 //     def add_to_failed(self, url):
 //         """Add URL to list of failed URLs."""
 //         if url not in self.failed_urls:
 //             self.failed_urls.append(url)
-// 
+//
 //     def remove_from_failed(self, url):
 //         """Remove from failed URLs if present."""
 //         if url in self.failed_urls:
 //             self.failed_urls.remove(url)
-// 
+//
 //     def get_articles_summary(self):
 //         """Print number of articles per topic."""
 //         summary = defaultdict(int)
@@ -397,14 +397,14 @@ impl SvtParser {
 //         if not self.crawled_data:
 //             print("No crawled data available!")
 //             return
-// 
+//
 //         for _article_id, year, topic in self.crawled_data.values():
 //             if topic in self.LOCAL:
 //                 local[translations.get(topic, topic)] += 1
 //             else:
 //                 summary[translations.get(topic, topic)] += 1
 //             per_year[year] += 1
-// 
+//
 //         # Count number of articles per topic
 //         print("SVT nyheter")
 //         total = 0
@@ -413,7 +413,7 @@ impl SvtParser {
 //             print(f"{topic}\t{amount}")
 //         print(f"SVT nyheter totalt\t{total}")
 //         print()
-// 
+//
 //         # Count local news separately
 //         print("SVT lokalnyheter")
 //         local_total = 0
@@ -423,25 +423,25 @@ impl SvtParser {
 //             print(f"{area}\t{amount}")
 //         print(f"Lokalnyheter totalt\t{local_total}")
 //         print()
-// 
+//
 //         # Articles per year
 //         print("SVT artiklar per år")
 //         for year, n in sorted(per_year.items()):
 //             print(f"{year}\t{n}")
 //         print()
-// 
+//
 //         # Total of all news items
 //         print(f"Alla nyhetsartiklar\t{total}")
-// 
+//
     /// Retry crawling/downloading failed URLs.
     pub fn retry_failed(&self) {
 //         if not self.failed_urls:
 //             print("Can't find any URLs that failed previously")
 //             return
-// 
+//
 //         success = set()
 //         new_failed = set()
-// 
+//
 //         for url in self.failed_urls:
 //             short_url = url
 //             if short_url.startswith("https://api.svt.se/nss-api/page"):
@@ -452,7 +452,7 @@ impl SvtParser {
 //                 topic_name = short_url.split("/")[2]
 //             else:
 //                 topic_name = short_url.split("/")[1]
-// 
+//
 //             # Process article listing
 //             if url.startswith("https://api.svt.se/nss-api/page"):
 //                 try:
@@ -471,30 +471,30 @@ impl SvtParser {
 //                     if self.debug:
 //                         print(f"  Error when parsing listing '{request.url}'\n  {tb}")
 //                     new_failed.add(url)
-// 
+//
 //             # Process article
 //             else:
 //                 if self.get_article(url, topic_name):
 //                     success.add(url)
 //                 else:
 //                     new_failed.add(url)
-// 
+//
 //         # Update fail file
 //         for i in success:
 //             self.remove_from_failed(i)
 //         for i in new_failed:
 //             self.add_to_failed(i)
 //         write_json(self.failed_urls, FAILED)
-// 
+//
 //         # Update file with crawled data
 //         write_json(self.crawled_data, CRAWLED)
     }
-} 
-// 
+}
+//
 // #-------------------------------------------------------------------------------
 // # Process JSON data
 // #-------------------------------------------------------------------------------
-// 
+//
 // def process_articles(override_existing=False):
 //     """Convert json data to Sparv-friendly XML."""
 //     def write_contents(contents, contents_dir, filecounter):
@@ -502,13 +502,13 @@ impl SvtParser {
 //         filepath = contents_dir / (str(filecounter) + ".xml")
 //         print(f"writing file {filepath}")
 //         write_data(contents, filepath)
-// 
+//
 //     # Get previously processed data
 //     processed_json = {}
 //     if PROCESSED_JSON.is_file():
 //         with open(PROCESSED_JSON) as f:
 //             processed_json = json.load(f)
-// 
+//
 //     # Loop through json files and convert them to XML
 //     for topicpath in sorted(DATADIR.rglob("svt-*/*")):
 //         yeardir = topicpath.parts[1]
@@ -521,11 +521,11 @@ impl SvtParser {
 //             filecounter = 1
 //         for p in sorted(topicpath.rglob("./*")):
 //             if p.is_file() and p.suffix == ".json":
-// 
+//
 //                 if not override_existing and str(p) in processed_json:
 //                     print(f"Skipping {p}, already processed in {processed_json[str(p)]}")
 //                     continue
-// 
+//
 //                 print(f"processing {p}")
 //                 with open(p) as f:
 //                     article_json = json.load(f)
@@ -540,10 +540,10 @@ impl SvtParser {
 //         # Write remaining contents
 //         if len(contents) > 11:
 //             write_contents(contents, contents_dir, filecounter)
-// 
+//
 //         write_json(processed_json, PROCESSED_JSON)
-// 
-// 
+//
+//
 // def process_article(article_json):
 //     """Parse JSON for one article and transform to XML"""
 //     def parse_element(elem, parent):
@@ -565,14 +565,14 @@ impl SvtParser {
 //             for c in elem.get("children"):
 //                 return parse_element(c, xml_elem)
 //         return parent
-// 
+//
 //     def set_attribute(xml_elem, article_json, json_name, xml_name):
 //         attr = str(article_json.get(json_name, "")).strip()
 //         if attr:
 //             xml_elem.set(xml_name, attr)
-// 
+//
 //     article = etree.Element("text")
-// 
+//
 //     # Set article date or omit if year is out of range
 //     this_year = int(datetime.today().strftime("%Y"))
 //     if article_json.get("published"):
@@ -583,7 +583,7 @@ impl SvtParser {
 //         year = int(article_json.get("modified")[:4])
 //         if (year >= 2004) and (year <= this_year):
 //             article.set("date", article_json.get("modified"))
-// 
+//
 //     # Set article attributes
 //     set_attribute(article, article_json, "id", "id")
 //     set_attribute(article, article_json, "sectionDisplayName", "section")
@@ -599,7 +599,7 @@ impl SvtParser {
 //     tags = "|".join(a.get("name", "") for a in article_json.get("tags", []))
 //     if tags:
 //         article.set("tags", "|" + tags + "|")
-// 
+//
 //     # Include the title and lead in the text
 //     title = etree.SubElement(article, "p")
 //     title.text = article_json.get("title", "").strip()
@@ -608,7 +608,7 @@ impl SvtParser {
 //         for i in article_json.get("structuredLead"):
 //             p = parse_element(i, article)
 //             p.set("type", "lead")
-// 
+//
 //     # Process body
 //     if article_json.get("structuredBody"):
 //         for i in article_json.get("structuredBody"):
@@ -619,7 +619,7 @@ impl SvtParser {
 //                 print(json.dumps(i))
 //                 print(e)
 //                 exit()
-// 
+//
 //     # Remove empty elemets (not tested!!)
 //     # https://stackoverflow.com/questions/30652470/clean-xml-remove-line-if-any-empty-tags
 //     for element in article.xpath(".//*[not(node())]"):
@@ -629,8 +629,8 @@ impl SvtParser {
 //     # Replace non-breaking spaces with ordinary spaces
 //     contents = contents.replace(u"\xa0", u" ")
 //     return contents
-// 
-// 
+//
+//
 // def crawled_data_from_files(outfile):
 //     """Compile an index of the crawled data based on downloaded files."""
 //     crawled_data = {}
@@ -638,36 +638,36 @@ impl SvtParser {
 //         year = jsonpath.parts[1][4:]
 //         topic = jsonpath.parts[2]
 //         article_id = jsonpath.stem
-// 
+//
 //         with open(jsonpath) as f:
 //             article_json = json.load(f)[0]
 //             url = article_json.get("url")
 //             crawled_data[url] = [article_id, year, topic]
-// 
+//
 //     write_json(crawled_data, DATADIR / outfile)
 //     print(f"Done writing index of crawled data to '{DATADIR / outfile}'\n")
-// 
-// 
+//
+//
 // #-------------------------------------------------------------------------------
 // # Auxiliaries
 // #-------------------------------------------------------------------------------
-// 
+//
 // def write_json(data, filepath):
 //     """Write json data to filepath."""
 //     dirpath = filepath.parent
 //     dirpath.mkdir(parents=True, exist_ok=True)
 //     with open(filepath, "w") as f:
 //         json.dump(data, f, ensure_ascii=False, indent=2)
-// 
-// 
+//
+//
 // def write_data(data, filepath):
 //     """Write arbitrary data to filepath."""
 //     dirpath = filepath.parent
 //     dirpath.mkdir(parents=True, exist_ok=True)
 //     with open(filepath, "w") as f:
 //         f.write(data)
-// 
-// 
+//
+//
 // def make_corpus_config(corpus_id, path):
 //     """Write Sparv corpus config file for sub corpus."""
 //     config_file = path / "config.yaml"
@@ -685,8 +685,8 @@ impl SvtParser {
 //     with open(config_file, "w") as f:
 //         f.write(config_content)
 //     print(f"{config_file} written")
-// 
-// 
+//
+//
 // #-------------------------------------------------------------------------------
 fn main() {
     // Parse command line args, print help if none are given
@@ -721,12 +721,12 @@ fn main() {
             println!("\nBuilding an index of crawled files based on the downloaded JSON files ...");
 //         crawled_data_from_files(args.out)
         }
-// 
-// 
+//
+//
 //     ## DEBUG STUFF
-// 
+//
 //     # SvtParser().get_article("/nyheter/inrikes/toppmote-om-arktis-i-kiruna", "inrikes")
-// 
+//
 //     # with open("data/svt-2020/konsument/28334881.json") as f:
 //     #     article_json = json.load(f)
 //     #     xml = process_article(article_json[0])

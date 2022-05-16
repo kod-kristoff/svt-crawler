@@ -7,7 +7,13 @@ pub struct Page {
 
 #[derive(serde::Deserialize, Debug)]
 pub struct Auto {
-   pub pagination: Pagination, 
+   pub pagination: Pagination,
+   pub content: Content,
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct Content {
+   pub url: String,
 }
 
 
