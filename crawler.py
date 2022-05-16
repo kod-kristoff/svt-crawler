@@ -13,8 +13,8 @@ from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
-import requests
-from lxml import etree
+# import requests
+# from lxml import etree
 
 DATADIR = Path("data")
 CRAWLED = DATADIR / Path("crawled_pages.json")

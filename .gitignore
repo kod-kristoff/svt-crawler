@@ -17,3 +17,8 @@ nohup*
 .svn
 README-sparv.md
 config.yaml
+
+
+# Added by cargo
+
+/target
